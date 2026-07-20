@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BIOME_MAP, BIOMES }   from '../data/biomes'
 import { SUBJECT_MAP }          from '../data/subjects'
+import useCortex                from '../hooks/useCortex'
 
 function formatAvgResponse(ms) {
   if (!ms) return 'N/A'
@@ -24,10 +25,25 @@ export default function StudyDNA({ biome = 'mindmap', subject = 'maths', profile
   const avgMs        = results?.avgResponseMs
   const techScores   = getTechniqueScores(biome, score)
   const [animated, setAnimated] = useState(false)
+  const { ask, message: cortexMessage, loading: cortexLoading } = useCortex()
 
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 300)
     return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    if (results) {
+      ask({
+        score,
+        subject:       s.label,
+        form,
+        biome,
+        correct:       results.correct,
+        total:         results.total,
+        avgResponseMs: avgMs,
+      })
+    }
   }, [])
 
   const grade      = score >= 80 ? 'S' : score >= 65 ? 'A' : score >= 50 ? 'B' : 'C'
@@ -121,15 +137,17 @@ export default function StudyDNA({ biome = 'mindmap', subject = 'maths', profile
       </div>
 
       {/* Professor Cortex */}
-      <div style={styles.bubble}>
+    <div style={styles.bubble}>
         <div style={styles.bubbleHeader}>
           <span style={{ fontSize: 18 }}>🤖</span>
           <span style={styles.bubbleName}>Professor Cortex</span>
+          {cortexLoading && <span style={{ fontSize: 11, color: '#7c3aed', marginLeft: 'auto' }}>Analysing...</span>}
         </div>
         <p style={styles.bubbleText}>
-          Your Study DNA for this session is now mapped. You scored <strong>{score}%</strong> in {s.label} 
-          using {b.technique}{avgMs ? ` with an average response time of ${formatAvgResponse(avgMs)}` : ''}.
-          Complete more sessions across different biomes to build a fuller picture of your learning style.
+          {cortexLoading
+            ? 'Professor Cortex is analysing your session...'
+            : cortexMessage ?? `Your Study DNA is now mapped. You scored ${score}% in ${s.label} using ${b.technique}. Complete more sessions to build a fuller picture of your learning style.`
+          }
         </p>
       </div>
 
