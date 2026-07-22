@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion'
+
 export default function WorldMap({ onNext, onSelect, selected = 'mindmap', profile }) {
   const biomes = [
     {
@@ -44,10 +46,15 @@ export default function WorldMap({ onNext, onSelect, selected = 'mindmap', profi
       <p style={styles.sub}>Each biome teaches a different study technique. Pick one to begin.</p>
 
       <div style={styles.grid}>
-        {biomes.map((b) => (
-          <button
+        {biomes.map((b, i) => (
+          <motion.button
             key={b.id}
             onClick={() => onSelect(b.id)}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08, duration: 0.3 }}
+            whileHover={{ y: -4, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             style={{
               ...styles.card,
               border: selected === b.id ? '2px solid #7c3aed' : '1px solid #e2e8f0',
@@ -60,7 +67,7 @@ export default function WorldMap({ onNext, onSelect, selected = 'mindmap', profi
             <span style={{ ...styles.tag, color: b.tagColor, background: b.tagBg }}>
               {b.tag}
             </span>
-          </button>
+          </motion.button>
         ))}
       </div>
 
@@ -80,9 +87,14 @@ export default function WorldMap({ onNext, onSelect, selected = 'mindmap', profi
         </div>
       </div>
 
-      <button style={styles.btn} onClick={onNext}>
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        style={styles.btn}
+        onClick={onNext}
+      >
         Enter {selectedBiome.name} →
-      </button>
+      </motion.button>
     </div>
   )
 }
@@ -127,8 +139,8 @@ const styles = {
     padding: '1.25rem 1rem',
     borderRadius: 16,
     cursor: 'pointer',
-    transition: 'all 0.2s',
     textAlign: 'center',
+    border: '1px solid #e2e8f0',
   },
   emoji: {
     fontSize: 32,
@@ -200,3 +212,4 @@ const styles = {
     cursor: 'pointer',
   },
 }
+EOF

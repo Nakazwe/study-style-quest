@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { supabase }       from './lib/supabase'
 import Auth               from './screens/Auth'
 import Welcome            from './screens/Welcome'
@@ -11,6 +12,12 @@ import StudyDNA           from './screens/StudyDNA'
 
 const SCREENS = ['welcome', 'selector', 'picker', 'map', 'guardian', 'recall', 'dna']
 
+const variants = {
+  initial: { opacity: 0, x: 24 },
+  animate: { opacity: 1, x: 0 },
+  exit:    { opacity: 0, x: -24 },
+}
+
 export default function App() {
   const [user, setUser]                       = useState(null)
   const [authLoading, setAuthLoading]         = useState(true)
@@ -20,24 +27,19 @@ export default function App() {
   const [studentProfile, setStudentProfile]   = useState(null)
   const [sessionResults, setSessionResults]   = useState(null)
 
-  // Check if user is already logged in
-useEffect(() => {
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    setUser(session?.user ?? null)
-    setAuthLoading(false)
-  })
-
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-    }
-    if (event === 'SIGNED_OUT') {
-      setUser(null)
-    }
-  })
+      setAuthLoading(false)
+    })
 
-  return () => subscription.unsubscribe()
-}, [])
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setUser(session?.user ?? null)
+      if (event === 'SIGNED_OUT') setUser(null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const next = () => setScreenIndex(i => Math.min(i + 1, SCREENS.length - 1))
 
@@ -45,10 +47,7 @@ useEffect(() => {
     setStudentProfile(profile)
     if (!user) return
     await supabase.from('profiles').upsert({
-      id:       user.id,
-      email:    user.email,
-      form:     profile.form,
-      subjects: profile.subjects,
+      id: user.id, email: user.email, form: profile.form, subjects: profile.subjects,
     })
   }
 
@@ -56,13 +55,8 @@ useEffect(() => {
     setSessionResults(results)
     if (!user) return
     await supabase.from('sessions').insert({
-      user_id:         user.id,
-      subject:         results.subject,
-      biome:           results.biome,
-      form:            results.form,
-      score:           results.score,
-      correct:         results.correct,
-      total:           results.total,
+      user_id: user.id, subject: results.subject, biome: results.biome, form: results.form,
+      score: results.score, correct: results.correct, total: results.total,
       avg_response_ms: results.avgResponseMs,
     })
   }
@@ -85,7 +79,13 @@ useEffect(() => {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        <p style={{ color: '#6b7280', fontSize: 14 }}>Loading...</p>
+        <motion.p
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ repeat: Infinity, duration: 1.4 }}
+          style={{ color: '#6b7280', fontSize: 14 }}
+        >
+          Loading...
+        </motion.p>
       </div>
     )
   }
@@ -102,8 +102,19 @@ useEffect(() => {
   const ActiveComponent = Components[id]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <ActiveComponent {...screenProps[id]} />
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%)', fontFamily: 'Inter, system-ui, sans-serif', overflow: 'hidden' }}>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={id}
+          variants={variants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.28, ease: 'easeInOut' }}
+        >
+          <ActiveComponent {...screenProps[id]} />
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
