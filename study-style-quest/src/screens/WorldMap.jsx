@@ -212,4 +212,3 @@ const styles = {
     cursor: 'pointer',
   },
 }
-EOF
