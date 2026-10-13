@@ -60,9 +60,9 @@ test('summariseTechniques averages real sessions and leaves untested techniques 
     { biome: 'recall', score: 100 },
   ]
   assert.deepEqual(summariseTechniques(history, TECHNIQUES), [
-    { id: 'mindmap', sessions: 2, average: 70, best: 80 },
-    { id: 'recall', sessions: 1, average: 100, best: 100 },
-    { id: 'feynman', sessions: 0, average: null, best: null },
+    { id: 'mindmap', sessions: 2, average: 70, best: 80, studyAverage: null },
+    { id: 'recall', sessions: 1, average: 100, best: 100, studyAverage: null },
+    { id: 'feynman', sessions: 0, average: null, best: null, studyAverage: null },
   ])
 })
 
@@ -75,7 +75,7 @@ test('summariseTechniques skips bad rows instead of counting them as zero', () =
     null,
   ]
   const [mindmap] = summariseTechniques(history, TECHNIQUES)
-  assert.deepEqual(mindmap, { id: 'mindmap', sessions: 1, average: 90, best: 90 })
+  assert.deepEqual(mindmap, { id: 'mindmap', sessions: 1, average: 90, best: 90, studyAverage: null })
 })
 
 test('summariseTechniques tolerates missing history and rejects missing technique list', () => {
@@ -105,4 +105,17 @@ test('rankTechniques breaks ties by number of sessions', () => {
     TECHNIQUES
   )
   assert.deepEqual(rankTechniques(summary).map((t) => t.id), ['mindmap', 'feynman'])
+})
+
+test('summariseTechniques averages study-phase scores separately and skips missing or invalid ones', () => {
+  const history = [
+    { biome: 'feynman', score: 60, studyScore: 80 },
+    { biome: 'feynman', score: 80, studyScore: 40 },
+    { biome: 'feynman', score: 70, studyScore: null },
+    { biome: 'feynman', score: 70, studyScore: 300 },
+  ]
+  const feynman = summariseTechniques(history, TECHNIQUES).find((t) => t.id === 'feynman')
+  assert.equal(feynman.sessions, 4)
+  assert.equal(feynman.average, 70)
+  assert.equal(feynman.studyAverage, 60)
 })

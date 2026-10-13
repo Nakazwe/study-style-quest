@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import questions from '../data/questions'
+import { getLesson, formKeyFor } from '../data/lessons'
 import { shuffle } from '../lib/shuffle'
 import { scoreSession, feedbackBand } from '../lib/scoring'
 
@@ -12,13 +13,16 @@ const cortexFeedback = {
   low:  'Interesting result. Lower recall often means the encoding phase needs reinforcement. Your Study DNA will reveal which technique suits your learning style better.',
 }
 
+// Every technique gets the same check: the questions the lesson was written from.
+// That keeps the comparison fair — only the study method changes between biomes.
 function getQuestions(subject, form) {
-  const formKey = form ? 'form' + form.replace('Form ', '') : 'form1'
-  const subjectBank = questions[subject]
-  if (!subjectBank) return []
-
-  const bank = subjectBank[formKey]
+  const bank = questions[subject]?.[formKeyFor(form)]
   if (!Array.isArray(bank)) return []
+
+  const lesson = getLesson(subject, form)
+  if (lesson) {
+    return shuffle(lesson.facts.map((fact) => bank[fact.q]).filter(Boolean))
+  }
 
   return shuffle(bank).slice(0, QUESTIONS_PER_SESSION)
 }
@@ -143,7 +147,8 @@ export default function RecallChallenge({ onNext, onScore, biome = 'mindmap', su
       <div style={styles.headerRow}>
         <div>
           <p style={styles.label}>Memory Recovery Mission</p>
-          <h2 style={styles.heading}>Recall Challenge</h2>
+          <h2 style={styles.heading}>Recall Check</h2>
+          <p style={styles.checkNote}>Same questions for every technique, so the comparison is fair.</p>
         </div>
         <span style={styles.counter}>{current + 1} / {questionSet.length}</span>
       </div>
@@ -208,7 +213,8 @@ const styles = {
   label:        { margin: '0 0 4px', fontSize: 12, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#7c3aed' },
   heading:      { margin: 0, fontSize: 20, fontWeight: 600, color: '#1a1a2e' },
   sub:          { margin: '0.5rem 0 1.5rem', fontSize: 14, color: '#6b7280' },
-  counter:      { fontSize: 13, fontWeight: 600, color: '#7c3aed', background: '#ede9fe', padding: '4px 12px', borderRadius: 20 },
+  checkNote:    { margin: '4px 0 0', fontSize: 12, color: '#6b7280' },
+  counter:      { fontSize: 13, fontWeight: 600, color: '#7c3aed', background: '#ede9fe', padding: '4px 12px', borderRadius: 20, whiteSpace: 'nowrap' },
   barBg:        { background: '#e2e8f0', borderRadius: 20, height: 6, marginBottom: '1.5rem', overflow: 'hidden' },
   barFill:      { height: '100%', borderRadius: 20, background: '#7c3aed' },
   questionCard: { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, padding: '1.25rem', marginBottom: '1.25rem' },

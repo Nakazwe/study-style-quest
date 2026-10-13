@@ -83,13 +83,20 @@ export function feedbackBand(score) {
   return 'low'
 }
 
+function average(values) {
+  if (values.length === 0) return null
+  return Math.round(values.reduce((total, value) => total + value, 0) / values.length)
+}
+
 /**
  * Averages saved sessions per technique.
+ * `average` is the Recall Check (the same test for every technique, so it is the fair comparison).
+ * `studyAverage` is the technique's own study-phase score, when the session recorded one.
  * Rows with an unknown technique or an out-of-range score are skipped, not counted as zero.
  *
- * @param {{ biome: string, score: number }[]} history
+ * @param {{ biome: string, score: number, studyScore?: number | null }[]} history
  * @param {string[]} techniqueIds
- * @returns {{ id: string, sessions: number, average: number | null, best: number | null }[]}
+ * @returns {{ id: string, sessions: number, average: number | null, best: number | null, studyAverage: number | null }[]}
  */
 export function summariseTechniques(history, techniqueIds) {
   if (!Array.isArray(techniqueIds) || techniqueIds.length === 0) {
@@ -102,18 +109,21 @@ export function summariseTechniques(history, techniqueIds) {
   )
 
   return techniqueIds.map((id) => {
-    const scores = validRows.filter((row) => row.biome === id).map((row) => row.score)
+    const sessions = validRows.filter((row) => row.biome === id)
 
-    if (scores.length === 0) {
-      return { id, sessions: 0, average: null, best: null }
+    if (sessions.length === 0) {
+      return { id, sessions: 0, average: null, best: null, studyAverage: null }
     }
 
-    const sum = scores.reduce((total, score) => total + score, 0)
+    const scores = sessions.map((row) => row.score)
+    const studyScores = sessions.map((row) => row.studyScore).filter(isValidScore)
+
     return {
       id,
-      sessions: scores.length,
-      average: Math.round(sum / scores.length),
+      sessions: sessions.length,
+      average: average(scores),
       best: Math.max(...scores),
+      studyAverage: average(studyScores),
     }
   })
 }

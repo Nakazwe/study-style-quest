@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { supabase }       from './lib/supabase'
+import { BIOME_MAP }      from './data/biomes'
 import Auth               from './screens/Auth'
 import Welcome            from './screens/Welcome'
 import SubjectSelector    from './screens/SubjectSelector'
@@ -11,6 +12,25 @@ import RecallChallenge    from './screens/RecallChallenge'
 import StudyDNA           from './screens/StudyDNA'
 
 const SCREENS = ['welcome', 'selector', 'picker', 'map', 'guardian', 'recall', 'dna']
+
+function toHistoryRow(row) {
+  return {
+    biome:      row.biome,
+    subject:    row.subject,
+    form:       row.form,
+    score:      row.score,
+    studyScore: row.study_score ?? null,
+    timestamp:  row.timestamp,
+  }
+}
+
+function isMissingColumnError(error) {
+  return error?.code === 'PGRST204' || /column/i.test(error?.message ?? '')
+}
+
+function testedBiomesFor(history, subject, form) {
+  return new Set(history.filter((row) => row.subject === subject && row.form === form).map((row) => row.biome))
+}
 
 const variants = {
   initial: { opacity: 0, x: 24 },
@@ -26,6 +46,7 @@ export default function App() {
   const [selectedSubject, setSelectedSubject] = useState('maths')
   const [studentProfile, setStudentProfile]   = useState(null)
   const [sessionResults, setSessionResults]   = useState(null)
+  const [studyResult, setStudyResult]         = useState(null)
   const [history, setHistory]                 = useState([])
 
   const userId = user?.id ?? null
@@ -53,9 +74,10 @@ export default function App() {
 
     let cancelled = false
 
+    // select('*') so history still loads before the optional study_score column exists.
     supabase
       .from('sessions')
-      .select('biome, subject, score, timestamp')
+      .select('*')
       .eq('user_id', userId)
       .order('timestamp', { ascending: true })
       .then(({ data, error }) => {
@@ -64,7 +86,7 @@ export default function App() {
           console.error('Failed to load session history:', error.message)
           return
         }
-        setHistory(data ?? [])
+        setHistory((data ?? []).map(toHistoryRow))
       })
 
     return () => { cancelled = true }
@@ -76,7 +98,14 @@ export default function App() {
     const index = SCREENS.indexOf(screenId)
     if (index === -1) return
     setSessionResults(null)
+    setStudyResult(null)
     setScreenIndex(index)
+  }
+
+  function handleStudyComplete(result) {
+    if (!result || !Number.isFinite(result.score)) return
+    setStudyResult(result)
+    next()
   }
 
   async function handleSaveProfile(profile) {
@@ -91,31 +120,52 @@ export default function App() {
     if (error) console.error('Failed to save profile:', error.message)
   }
 
-  async function handleScore(results) {
-    if (!results || !Number.isFinite(results.score)) return
+  async function handleScore(checkResults) {
+    if (!checkResults || !Number.isFinite(checkResults.score)) return
 
+    const results = { ...checkResults, study: studyResult }
     setSessionResults(results)
     setHistory((prev) => [
       ...prev,
-      { biome: results.biome, subject: results.subject, score: results.score, timestamp: results.timestamp },
+      {
+        biome: results.biome, subject: results.subject, form: results.form,
+        score: results.score, studyScore: studyResult?.score ?? null, timestamp: results.timestamp,
+      },
     ])
 
     if (!user) return
 
-    const { error } = await supabase.from('sessions').insert({
+    const baseRow = {
       user_id: user.id, subject: results.subject, biome: results.biome, form: results.form,
       score: results.score, correct: results.correct, total: results.total,
       avg_response_ms: results.avgResponseMs,
+    }
+
+    const { error } = await supabase.from('sessions').insert({
+      ...baseRow,
+      study_score:  studyResult?.score ?? null,
+      study_metric: studyResult?.metric ?? null,
     })
-    if (error) console.error('Failed to save session:', error.message)
+    if (!error) return
+
+    // Guard: the study columns are optional. If the table doesn't have them yet, save the core row anyway.
+    if (isMissingColumnError(error)) {
+      const retry = await supabase.from('sessions').insert(baseRow)
+      if (retry.error) console.error('Failed to save session:', retry.error.message)
+      return
+    }
+    console.error('Failed to save session:', error.message)
   }
 
   const screenProps = {
     welcome:  { onNext: next },
     selector: { onNext: next, onSave: handleSaveProfile },
     picker:   { onNext: next, onSubject: setSelectedSubject, profile: studentProfile },
-    map:      { onNext: next, onSelect: setSelectedBiome, selected: selectedBiome, profile: studentProfile },
-    guardian: { onNext: next, biome: selectedBiome, subject: selectedSubject, profile: studentProfile },
+    map:      {
+      onNext: next, onSelect: setSelectedBiome, selected: selectedBiome, profile: studentProfile,
+      testedBiomes: testedBiomesFor(history, selectedSubject, studentProfile?.form),
+    },
+    guardian: { onNext: handleStudyComplete, biome: selectedBiome, subject: selectedSubject, profile: studentProfile },
     recall:   { onNext: next, biome: selectedBiome, subject: selectedSubject, onScore: handleScore, profile: studentProfile },
     dna:      {
       biome: selectedBiome,
@@ -123,7 +173,10 @@ export default function App() {
       profile: studentProfile,
       results: sessionResults,
       history,
-      onTryAnother:    () => goTo('map'),
+      onTryAnother:    (biomeId) => {
+        if (typeof biomeId === 'string' && BIOME_MAP[biomeId]) setSelectedBiome(biomeId)
+        goTo('map')
+      },
       onChangeSubject: () => goTo('picker'),
     },
   }

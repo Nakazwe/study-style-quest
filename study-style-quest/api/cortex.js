@@ -18,7 +18,7 @@ function isShortText(value) {
 function validatePayload(body) {
   if (!body || typeof body !== 'object') return 'Request body must be a JSON object'
 
-  const { score, subject, form, biome, correct, total, avgResponseMs } = body
+  const { score, subject, form, biome, correct, total, avgResponseMs, studyMetric, studyScore } = body
 
   if (!Number.isFinite(score) || score < 0 || score > 100) return 'score must be a number from 0 to 100'
   if (!isShortText(subject)) return 'subject must be 1 to ' + MAX_TEXT_LENGTH + ' characters'
@@ -29,14 +29,24 @@ function validatePayload(body) {
   if (avgResponseMs !== undefined && avgResponseMs !== null && (!Number.isFinite(avgResponseMs) || avgResponseMs < 0)) {
     return 'avgResponseMs must be a positive number when provided'
   }
+  if (studyMetric !== undefined && studyMetric !== null && !isShortText(studyMetric)) {
+    return 'studyMetric must be 1 to ' + MAX_TEXT_LENGTH + ' characters when provided'
+  }
+  if (studyScore !== undefined && studyScore !== null && (!Number.isFinite(studyScore) || studyScore < 0 || studyScore > 100)) {
+    return 'studyScore must be a number from 0 to 100 when provided'
+  }
 
   return null
 }
 
-function buildPrompt({ score, subject, form, biome, correct, total, avgResponseMs }) {
+function buildPrompt({ score, subject, form, biome, correct, total, avgResponseMs, studyMetric, studyScore }) {
   const avgTime = Number.isFinite(avgResponseMs) && avgResponseMs > 0
     ? (avgResponseMs / 1000).toFixed(1) + ' seconds'
     : 'not recorded'
+
+  const studyLine = isShortText(studyMetric) && Number.isFinite(studyScore)
+    ? `\n- Study phase (${BIOME_NAMES[biome]}): ${studyMetric} — ${studyScore}%`
+    : ''
 
   return `You are Professor Cortex, an encouraging and insightful AI study mentor for secondary school students in Zambia. You speak warmly but directly. You never use hollow praise.
 
@@ -44,8 +54,8 @@ A student just completed a study session. Here are their results:
 - Subject: ${subject}
 - Form: ${form}
 - Study technique used: ${BIOME_NAMES[biome]}
-- Score: ${score}% (${correct} out of ${total} questions correct)
-- Average response time: ${avgTime}
+- Recall Check score (same test for every technique): ${score}% (${correct} out of ${total} questions correct)
+- Average response time: ${avgTime}${studyLine}
 
 Write a personalised 3-sentence response as Professor Cortex that:
 1. Acknowledges their specific score and subject honestly

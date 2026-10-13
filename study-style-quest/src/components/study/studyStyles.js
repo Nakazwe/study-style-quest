@@ -1,0 +1,17 @@
+export const studyStyles = {
+  notes:        { background: '#ffffff', border: '1px solid', borderLeftWidth: 4, borderRadius: 12, padding: '0.9rem 1.1rem', marginBottom: '1.25rem' },
+  notesLabel:   { margin: '0 0 8px', fontSize: 12, fontWeight: 700, letterSpacing: '0.05em' },
+  notesList:    { margin: 0, paddingLeft: '1.1rem', display: 'grid', gap: 6 },
+  notesItem:    { color: '#1a1a2e', lineHeight: 1.55 },
+  timerRow:     { display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' },
+  timerTrack:   { flex: 1, height: 6, background: '#e2e8f0', borderRadius: 20, overflow: 'hidden' },
+  timerFill:    { height: '100%', borderRadius: 20, transition: 'width 0.25s linear' },
+  timerText:    { fontSize: 13, fontWeight: 700, minWidth: 32, textAlign: 'right' },
+  heading:      { margin: '0 0 6px', fontSize: 17, fontWeight: 600, color: '#1a1a2e' },
+  sub:          { margin: '0 0 1rem', fontSize: 13, color: '#6b7280', lineHeight: 1.6 },
+  summary:      { borderRadius: 14, padding: '1rem 1.1rem', marginBottom: '1.25rem', border: '1px solid' },
+  summaryText:  { margin: 0, fontSize: 14, color: '#1a1a2e', lineHeight: 1.6 },
+  row:          { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, marginBottom: 8, fontSize: 14, lineHeight: 1.5 },
+  btn:          { width: '100%', background: '#534AB7', color: 'white', border: 'none', borderRadius: 12, padding: '13px 24px', fontSize: 15, fontWeight: 500, cursor: 'pointer' },
+  btnGhost:     { width: '100%', background: 'transparent', color: '#534AB7', border: '1px solid #c4b5fd', borderRadius: 12, padding: '11px 24px', fontSize: 14, fontWeight: 500, cursor: 'pointer', marginBottom: 10 },
+}
