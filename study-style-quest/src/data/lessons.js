@@ -9,13 +9,14 @@
 //   text     the sentence shown in the lesson notes
 //   blank    fill-in sentence for Recall Forest (exactly one ____)
 //   answers  accepted answers for the blank
+//   rejects  (optional) real words one slip away from an answer that must still be marked wrong
 //   keywords phrases that show the idea was covered in a Feynman explanation (any one counts)
 
 export const READ_SECONDS = 30
 export const MIN_EXPLANATION_WORDS = 12
 
-function fact(q, branch, concept, text, blank, answers, keywords) {
-  return { q, branch, concept, text, blank, answers, keywords }
+function fact(q, branch, concept, text, blank, answers, keywords, rejects = []) {
+  return { q, branch, concept, text, blank, answers, keywords, rejects }
 }
 
 export const LESSONS = {
@@ -120,7 +121,7 @@ export const LESSONS = {
       facts: [
         fact(3, 'A', 'Newtons', 'Force is measured in newtons (N).', 'Force is measured in ____', ['newtons', 'newton', 'n'], ['newton']),
         fact(9, 'A', 'Gravity', 'Gravity is the force that pulls objects towards the Earth.', '____ pulls objects towards the Earth.', ['gravity'], ['gravity', 'pulls objects']),
-        fact(4, 'A', 'Elastic energy', 'A stretched rubber band stores elastic potential energy.', 'A stretched rubber band stores ____ potential energy.', ['elastic'], ['elastic', 'stretched', 'rubber band']),
+        fact(4, 'A', 'Elastic energy', 'A stretched rubber band stores elastic potential energy.', 'A stretched rubber band stores ____ potential energy.', ['elastic'], ['elastic', 'stretched', 'rubber band'], ['plastic']),
         fact(2, 'B', 'Carbon dioxide', 'During photosynthesis, plants take in carbon dioxide from the air.', 'Plants take in ____ during photosynthesis.', ['carbon dioxide', 'co2'], ['carbon dioxide', 'co2']),
         fact(6, 'B', 'Roots', 'Roots absorb water and minerals from the soil.', 'Roots absorb water and ____ from the soil.', ['minerals', 'mineral', 'mineral salts'], ['root', 'minerals', 'from the soil']),
       ],
@@ -133,7 +134,7 @@ export const LESSONS = {
         fact(6, 'A', 'Kidneys', 'The kidneys filter waste from the blood.', 'The ____ filter waste from the blood.', ['kidneys', 'kidney'], ['kidney', 'filter']),
         fact(9, 'A', 'Mitochondria', 'Mitochondria are the "powerhouse" of the cell — they release energy.', '____ are the powerhouse of the cell.', ['mitochondria', 'mitochondrion'], ['mitochondri', 'powerhouse']),
         fact(1, 'B', 'Kinetic energy', 'A moving car has kinetic energy — the energy of movement.', 'A moving car has ____ energy.', ['kinetic'], ['kinetic', 'energy of movement']),
-        fact(8, 'B', 'Refraction', 'Refraction is the bending of light as it passes from one material into another.', '____ is the bending of light between materials.', ['refraction'], ['refract', 'bending of light', 'light bends']),
+        fact(8, 'B', 'Refraction', 'Refraction is the bending of light as it passes from one material into another.', '____ is the bending of light between materials.', ['refraction'], ['refract', 'bending of light', 'light bends'], ['retraction', 'retractions', 'reflection', 'reflections']),
       ],
     },
     form3: {
@@ -180,7 +181,7 @@ export const LESSONS = {
         fact(4, 'A', 'Diffusion', 'Diffusion is the movement of particles from a high to a low concentration.', '____ moves particles from high to low concentration.', ['diffusion'], ['diffusion', 'diffuse']),
         fact(9, 'A', 'Active transport', 'Active transport moves substances against the concentration gradient and uses energy.', 'Active transport moves substances against the gradient and uses ____', ['energy', 'atp'], ['active transport', 'uses energy', 'against the']),
         fact(2, 'B', 'Red blood cells', 'Red blood cells carry oxygen around the body.', 'Red blood cells carry ____', ['oxygen', 'o2'], ['red blood', 'carry oxygen']),
-        fact(5, 'B', 'White blood cells', 'White blood cells fight infection.', 'White blood cells fight ____', ['infection', 'infections', 'disease', 'germs'], ['white blood', 'infection']),
+        fact(5, 'B', 'White blood cells', 'White blood cells fight infection.', 'White blood cells fight ____', ['infection', 'infections', 'disease', 'germs'], ['white blood', 'infection'], ['injection', 'injections', 'inflection', 'inflections']),
       ],
     },
     form3: {
@@ -190,7 +191,7 @@ export const LESSONS = {
         fact(2, 'A', 'Cerebellum', 'The cerebellum controls balance.', 'The ____ controls balance.', ['cerebellum'], ['cerebellum', 'balance']),
         fact(5, 'A', 'Reflex action', 'A reflex action is an automatic response to a stimulus.', 'A reflex is an ____ response to a stimulus.', ['automatic'], ['reflex', 'automatic']),
         fact(4, 'A', 'Hypothalamus', 'The hypothalamus regulates body temperature.', 'The ____ regulates body temperature.', ['hypothalamus'], ['hypothalamus', 'body temperature']),
-        fact(3, 'B', 'Natural selection', 'Natural selection means the best-adapted organisms survive and reproduce.', 'Natural selection means the best ____ organisms survive.', ['adapted', 'adapted organisms'], ['natural selection', 'adapted', 'survival of the']),
+        fact(3, 'B', 'Natural selection', 'Natural selection means the best-adapted organisms survive and reproduce.', 'Natural selection means the best ____ organisms survive.', ['adapted', 'adapted organisms'], ['natural selection', 'adapted', 'survival of the'], ['adopted']),
         fact(8, 'B', 'Evolution', 'Evolution is the gradual change in species over many generations.', 'Evolution is gradual change in species over many ____', ['generations', 'generation'], ['evolution', 'evolve', 'generations']),
       ],
     },

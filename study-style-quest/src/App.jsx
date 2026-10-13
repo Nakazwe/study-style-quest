@@ -92,7 +92,11 @@ export default function App() {
     return () => { cancelled = true }
   }, [userId])
 
-  const next = () => setScreenIndex((i) => Math.min(i + 1, SCREENS.length - 1))
+  // Advance only if we're still on the screen that asked to move on.
+  // A double click (or a click on a screen that is animating out) would otherwise skip a screen.
+  function advanceFrom(screenId) {
+    setScreenIndex((i) => (SCREENS[i] === screenId ? Math.min(i + 1, SCREENS.length - 1) : i))
+  }
 
   function goTo(screenId) {
     const index = SCREENS.indexOf(screenId)
@@ -105,7 +109,7 @@ export default function App() {
   function handleStudyComplete(result) {
     if (!result || !Number.isFinite(result.score)) return
     setStudyResult(result)
-    next()
+    advanceFrom('guardian')
   }
 
   async function handleSaveProfile(profile) {
@@ -158,15 +162,15 @@ export default function App() {
   }
 
   const screenProps = {
-    welcome:  { onNext: next },
-    selector: { onNext: next, onSave: handleSaveProfile },
-    picker:   { onNext: next, onSubject: setSelectedSubject, profile: studentProfile },
+    welcome:  { onNext: () => advanceFrom('welcome') },
+    selector: { onNext: () => advanceFrom('selector'), onSave: handleSaveProfile },
+    picker:   { onNext: () => advanceFrom('picker'), onSubject: setSelectedSubject, profile: studentProfile },
     map:      {
-      onNext: next, onSelect: setSelectedBiome, selected: selectedBiome, profile: studentProfile,
+      onNext: () => advanceFrom('map'), onSelect: setSelectedBiome, selected: selectedBiome, profile: studentProfile,
       testedBiomes: testedBiomesFor(history, selectedSubject, studentProfile?.form),
     },
     guardian: { onNext: handleStudyComplete, biome: selectedBiome, subject: selectedSubject, profile: studentProfile },
-    recall:   { onNext: next, biome: selectedBiome, subject: selectedSubject, onScore: handleScore, profile: studentProfile },
+    recall:   { onNext: () => advanceFrom('recall'), biome: selectedBiome, subject: selectedSubject, onScore: handleScore, profile: studentProfile },
     dna:      {
       biome: selectedBiome,
       subject: selectedSubject,

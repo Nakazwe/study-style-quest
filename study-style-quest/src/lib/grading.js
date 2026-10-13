@@ -9,7 +9,7 @@ function baseNormalize(value) {
     .toLowerCase()
     .replace(/[−–—]/g, '-')
     .replace(/×/g, ' x ')
-    .replace(/(?<=[a-z])-(?=[a-z])/g, '') // counter-argument → counterargument, half-life → halflife
+    .replace(/([a-z])-(?=[a-z])/g, '$1') // counter-argument → counterargument (no lookbehind: older iPhones can't parse it)
     .replace(/[^a-z0-9/=.\-±+ ]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
@@ -26,41 +26,46 @@ export function normalizeAnswer(value) {
   return text.replace(/ /g, '')
 }
 
+// Edit distance where swapping two neighbouring letters ("nuclues") counts as one slip, not two.
 function editDistance(a, b) {
-  const previous = Array.from({ length: b.length + 1 }, (_, i) => i)
+  const rows = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
+  for (let j = 0; j <= b.length; j++) rows[0][j] = j
+
   for (let i = 1; i <= a.length; i++) {
-    let diagonal = previous[0]
-    previous[0] = i
     for (let j = 1; j <= b.length; j++) {
-      const above = previous[j]
-      previous[j] = Math.min(
-        previous[j] + 1,
-        previous[j - 1] + 1,
-        diagonal + (a[i - 1] === b[j - 1] ? 0 : 1)
-      )
-      diagonal = above
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      rows[i][j] = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        rows[i][j] = Math.min(rows[i][j], rows[i - 2][j - 2] + 1)
+      }
     }
   }
-  return previous[b.length]
+  return rows[a.length][b.length]
 }
+
+// One slip at most, and only in words of 7+ letters. Looser rules let real wrong answers through:
+// two slips accept "explicit" for "implicit"; one slip on short words accepts "night" for "light".
+const MIN_LENGTH_FOR_TYPO = 7
 
 function allowedTypos(answer) {
   if (!/^[a-z]+$/.test(answer)) return 0 // numbers and formulas must be exact
-  if (answer.length >= 8) return 2
-  if (answer.length >= 5) return 1
-  return 0
+  return answer.length >= MIN_LENGTH_FOR_TYPO ? 1 : 0
 }
 
 /**
- * True when the typed answer matches any accepted answer, allowing small spelling slips in longer words.
+ * True when the typed answer matches any accepted answer, allowing one spelling slip in longer words.
+ * `rejectedAnswers` lists real words that sit one slip away but mean something else ("plastic" for "elastic").
  */
-export function isAnswerCorrect(input, acceptedAnswers) {
+export function isAnswerCorrect(input, acceptedAnswers, rejectedAnswers = []) {
   if (!Array.isArray(acceptedAnswers) || acceptedAnswers.length === 0) {
     throw new TypeError('At least one accepted answer is required')
   }
 
   const given = normalizeAnswer(input)
   if (!given) return false
+  if (Array.isArray(rejectedAnswers) && rejectedAnswers.some((rejected) => normalizeAnswer(rejected) === given)) {
+    return false
+  }
 
   return acceptedAnswers.some((accepted) => {
     const target = normalizeAnswer(accepted)
@@ -89,7 +94,7 @@ export function gradeRecall(responses, facts) {
   const results = facts.map((fact, index) => ({
     index,
     given: typeof responses[index] === 'string' ? responses[index].trim() : '',
-    correct: isAnswerCorrect(responses[index], fact.answers),
+    correct: isAnswerCorrect(responses[index], fact.answers, fact.rejects),
   }))
 
   const correct = results.filter((r) => r.correct).length

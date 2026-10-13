@@ -14,10 +14,13 @@ test('normalizeAnswer handles case, articles, punctuation, dashes and "x ="', ()
   assert.equal(normalizeAnswer(null), '')
 })
 
-test('isAnswerCorrect accepts synonyms and small spelling slips in long words only', () => {
+test('isAnswerCorrect accepts synonyms and one spelling slip in 7+ letter words only', () => {
   assert.equal(isAnswerCorrect('membrane', ['membrane']), true)
-  assert.equal(isAnswerCorrect('membrain', ['membrane']), true)
+  assert.equal(isAnswerCorrect('membarne', ['membrane']), true)
+  assert.equal(isAnswerCorrect('nuclues', ['nucleus']), true)
   assert.equal(isAnswerCorrect('mitocondria', ['mitochondria']), true)
+  assert.equal(isAnswerCorrect('membrain', ['membrane']), false)
+  assert.equal(isAnswerCorrect('night', ['light', 'sunlight']), false)
   assert.equal(isAnswerCorrect('sunlight', ['light', 'sunlight']), true)
   assert.equal(isAnswerCorrect('3/4', ['3/4', '75/100']), true)
   assert.equal(isAnswerCorrect('4', ['5']), false)
@@ -96,4 +99,29 @@ test('every lesson is complete and every fact points at a real question', () => 
       assert.equal(selfExplained.score, 100, `${where} lesson text misses keywords: ${selfExplained.missed.map((i) => lesson.facts[i].concept)}`)
     }
   }
+})
+
+test('near-miss words that mean something else are marked wrong', () => {
+  const find = (subject, form, concept) => getLesson(subject, form).facts.find((f) => f.concept === concept)
+  const implicit = find('english', 'Form 4', 'Implicit meaning')
+  assert.equal(isAnswerCorrect('explicit', implicit.answers, implicit.rejects), false)
+  const refraction = find('science', 'Form 2', 'Refraction')
+  assert.equal(isAnswerCorrect('reflection', refraction.answers, refraction.rejects), false)
+  assert.equal(isAnswerCorrect('refracton', refraction.answers, refraction.rejects), true)
+  const elastic = find('science', 'Form 1', 'Elastic energy')
+  assert.equal(isAnswerCorrect('plastic', elastic.answers, elastic.rejects), false)
+  const adapted = find('biology', 'Form 3', 'Natural selection')
+  assert.equal(isAnswerCorrect('adopted', adapted.answers, adapted.rejects), false)
+  const simile = find('english', 'Form 2', 'Simile')
+  assert.equal(isAnswerCorrect('simple', simile.answers, simile.rejects), false)
+  const infection = find('biology', 'Form 2', 'White blood cells')
+  assert.equal(isAnswerCorrect('injection', infection.answers, infection.rejects), false)
+  assert.equal(gradeRecall(['plastic'], [elastic]).correct, 0)
+})
+
+test('normalisation has no lookbehind regex (older iPhones cannot parse it)', async () => {
+  const { readFile } = await import('node:fs/promises')
+  const source = await readFile(new URL('./grading.js', import.meta.url), 'utf8')
+  assert.equal(source.includes('(?<='), false)
+  assert.equal(source.includes('(?<!'), false)
 })

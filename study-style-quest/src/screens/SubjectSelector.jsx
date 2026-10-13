@@ -37,13 +37,14 @@ export default function SubjectSelector({ onNext, onSave }) {
     setStep(2)
   }
 
+  const coreIds = SUBJECTS.core.map((s) => s.id)
+
+  // Core subjects are always included, so a student with no optional subjects can still continue.
   function handleFinish() {
-    if (selectedSubjects.length === 0) return
-    onSave({ form: selectedForm, subjects: selectedSubjects })
+    if (!selectedForm) return
+    onSave({ form: selectedForm, subjects: [...coreIds, ...selectedSubjects.filter((s) => !coreIds.includes(s))] })
     onNext()
   }
-
-  const coreIds = SUBJECTS.core.map((s) => s.id)
 
   return (
     <div style={styles.container}>

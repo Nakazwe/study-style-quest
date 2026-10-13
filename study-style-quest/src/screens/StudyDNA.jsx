@@ -223,7 +223,7 @@ export default function StudyDNA({ biome = 'mindmap', subject = 'maths', profile
 }
 
 const styles = {
-  container:       { maxWidth: 560, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', padding: '2rem 1.5rem' },
+  container:       { maxWidth: 560, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', padding: '2rem 1.5rem', textAlign: 'left' },
   label:           { margin: '0 0 4px', fontSize: 12, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#7c3aed' },
   heading:         { margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: '#1a1a2e' },
   sub:             { margin: '0 0 1.25rem', fontSize: 14, color: '#6b7280', lineHeight: 1.6 },

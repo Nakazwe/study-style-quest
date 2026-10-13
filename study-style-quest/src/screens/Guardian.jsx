@@ -47,7 +47,7 @@ export default function Guardian({ onNext, biome = 'mindmap', subject = 'maths',
 }
 
 const styles = {
-  container:    { maxWidth: 600, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', padding: '2rem 1.5rem' },
+  container:    { maxWidth: 600, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif', padding: '2rem 1.5rem', textAlign: 'left' },
   header:       { display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1.25rem', flexWrap: 'wrap' },
   avatar:       { width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, flexShrink: 0 },
   guardianName: { margin: '0 0 2px', fontSize: 15, fontWeight: 600, color: '#1a1a2e' },
