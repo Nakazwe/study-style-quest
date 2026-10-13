@@ -1,3 +1,5 @@
+import questions from '../data/questions'
+
 export default function SubjectPicker({ onNext, onSubject, profile }) {
   const coreSubjects = [
     { id: 'maths',   label: 'Mathematics', emoji: '📐', desc: 'Numbers, algebra, geometry' },
@@ -26,6 +28,7 @@ export default function SubjectPicker({ onNext, onSubject, profile }) {
   )
 
   function handlePick(id) {
+    if (!questions[id]) return
     onSubject(id)
     onNext()
   }
@@ -72,17 +75,21 @@ export default function SubjectPicker({ onNext, onSubject, profile }) {
             Your optional subjects
           </p>
           <div style={styles.grid}>
-            {availableOptionals.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => handlePick(s.id)}
-                style={styles.card}
-              >
-                <span style={styles.emoji}>{s.emoji}</span>
-                <p style={styles.cardName}>{s.label}</p>
-                <p style={styles.cardDesc}>{s.desc}</p>
-              </button>
-            ))}
+            {availableOptionals.map((s) => {
+              const hasContent = Boolean(questions[s.id])
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => handlePick(s.id)}
+                  disabled={!hasContent}
+                  style={{ ...styles.card, opacity: hasContent ? 1 : 0.5, cursor: hasContent ? 'pointer' : 'not-allowed' }}
+                >
+                  <span style={styles.emoji}>{s.emoji}</span>
+                  <p style={styles.cardName}>{s.label}</p>
+                  <p style={styles.cardDesc}>{hasContent ? s.desc : 'Coming soon'}</p>
+                </button>
+              )
+            })}
           </div>
         </>
       )}

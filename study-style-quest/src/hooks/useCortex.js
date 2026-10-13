@@ -6,6 +6,8 @@ export default function useCortex() {
   const [error, setError]     = useState(null)
 
   async function ask(results) {
+    if (!results || !Number.isFinite(results.score)) return
+
     setLoading(true)
     setError(null)
 
@@ -25,7 +27,7 @@ export default function useCortex() {
       }
 
       setMessage(data.message)
-    } catch (err) {
+    } catch {
       setError('Could not reach Professor Cortex. Check your connection.')
     }
 

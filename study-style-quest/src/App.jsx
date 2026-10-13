@@ -26,6 +26,9 @@ export default function App() {
   const [selectedSubject, setSelectedSubject] = useState('maths')
   const [studentProfile, setStudentProfile]   = useState(null)
   const [sessionResults, setSessionResults]   = useState(null)
+  const [history, setHistory]                 = useState([])
+
+  const userId = user?.id ?? null
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,30 +38,76 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setUser(session?.user ?? null)
-      if (event === 'SIGNED_OUT') setUser(null)
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setHistory([])
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  const next = () => setScreenIndex(i => Math.min(i + 1, SCREENS.length - 1))
+  // Load every saved session once per signed-in user so Study DNA compares techniques on real data.
+  useEffect(() => {
+    if (!userId) return
+
+    let cancelled = false
+
+    supabase
+      .from('sessions')
+      .select('biome, subject, score, timestamp')
+      .eq('user_id', userId)
+      .order('timestamp', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          console.error('Failed to load session history:', error.message)
+          return
+        }
+        setHistory(data ?? [])
+      })
+
+    return () => { cancelled = true }
+  }, [userId])
+
+  const next = () => setScreenIndex((i) => Math.min(i + 1, SCREENS.length - 1))
+
+  function goTo(screenId) {
+    const index = SCREENS.indexOf(screenId)
+    if (index === -1) return
+    setSessionResults(null)
+    setScreenIndex(index)
+  }
 
   async function handleSaveProfile(profile) {
+    if (!profile?.form) return
+
     setStudentProfile(profile)
     if (!user) return
-    await supabase.from('profiles').upsert({
+
+    const { error } = await supabase.from('profiles').upsert({
       id: user.id, email: user.email, form: profile.form, subjects: profile.subjects,
     })
+    if (error) console.error('Failed to save profile:', error.message)
   }
 
   async function handleScore(results) {
+    if (!results || !Number.isFinite(results.score)) return
+
     setSessionResults(results)
+    setHistory((prev) => [
+      ...prev,
+      { biome: results.biome, subject: results.subject, score: results.score, timestamp: results.timestamp },
+    ])
+
     if (!user) return
-    await supabase.from('sessions').insert({
+
+    const { error } = await supabase.from('sessions').insert({
       user_id: user.id, subject: results.subject, biome: results.biome, form: results.form,
       score: results.score, correct: results.correct, total: results.total,
       avg_response_ms: results.avgResponseMs,
     })
+    if (error) console.error('Failed to save session:', error.message)
   }
 
   const screenProps = {
@@ -68,7 +117,15 @@ export default function App() {
     map:      { onNext: next, onSelect: setSelectedBiome, selected: selectedBiome, profile: studentProfile },
     guardian: { onNext: next, biome: selectedBiome, subject: selectedSubject, profile: studentProfile },
     recall:   { onNext: next, biome: selectedBiome, subject: selectedSubject, onScore: handleScore, profile: studentProfile },
-    dna:      { biome: selectedBiome, subject: selectedSubject, profile: studentProfile, results: sessionResults },
+    dna:      {
+      biome: selectedBiome,
+      subject: selectedSubject,
+      profile: studentProfile,
+      results: sessionResults,
+      history,
+      onTryAnother:    () => goTo('map'),
+      onChangeSubject: () => goTo('picker'),
+    },
   }
 
   const Components = {
